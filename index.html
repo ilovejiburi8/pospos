@@ -1,48 +1,49 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>テーブル更新中...</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>
-    (function() {
-      // ★ あなたの GAS WebアプリURL に置き換えてください
-      // 例: https://script.google.com/macros/s/xxxxxxxxxxxxxxxxx/exec
-      const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzP5EvjjBAUqifTrlaqWHrlNOMpZPla219FeHNQ5vrxneo0-2SFU6d2XGG_EC_0em1q/exec';
+<script>
+  (function() {
+    // ★ あなたの GAS WebアプリURL（最後に ? は付けない）
+    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzP5EvjjBAUqifTrlaqWHrLN0MPZpL2a19FeHNQ5vrxne0-2SFU6d2XGG_EC_0em1q/exec';
 
-      // ★ AppSheet側の遷移先URL
-      const APPSHEET_BASE = 'https://www.appsheet.com/start/32751f13-1acd-4d48-b973-8254b9d92a59';
+    // ★ AppSheet側の遷移先URL
+    const APPSHEET_BASE = 'https://www.appsheet.com/start/32751f13-1acd-4d48-b973-8254b9d92a59';
 
-      // URLパラメータから tableId を取得（例：?tableId=table1）
-      const params = new URLSearchParams(window.location.search);
-      const tableId = params.get('tableId');
+    const params = new URLSearchParams(window.location.search);
+    const tableId = params.get('tableId');
 
-      if (!tableId) {
-        document.addEventListener('DOMContentLoaded', function() {
-          document.getElementById('msg').textContent =
-            'tableId がURLに指定されていません。（例：?tableId=table1）';
-        });
-        return;
-      }
-
+    if (!tableId) {
       document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('msg').textContent =
-          'テーブル [' + tableId + '] の更新日時を記録しています...';
+          'tableId がURLに指定されていません。（例：?tableId=table1）';
       });
+      return;
+    }
 
-      // 1) GASを透明な画像リクエストで叩く
-      const img = new Image();
-      img.src = GAS_ENDPOINT + '?tableId=' + encodeURIComponent(tableId);
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('msg').textContent =
+        'テーブル [' + tableId + '] の更新日時を記録しています...';
+    });
 
-      // 2) 少し待ってから AppSheet に飛ばす
-      setTimeout(function() {
-        const url = APPSHEET_BASE;
-        window.location.href = url;
-      }, 500);
-    })();
-  </script>
-</head>
-<body style="font-family: system-ui;">
-  <p id="msg">読み込み中...</p>
-</body>
-</html>
+    // ===== ここで GAS の処理完了を待つ =====
+    const url = GAS_ENDPOINT + '?tableId=' + encodeURIComponent(tableId);
+
+    fetch(url, { method: 'GET' })
+      .then(function(res) {
+        return res.json();   // JSON をパース
+      })
+      .then(function(data) {
+        console.log('GAS response:', data);
+        if (data.ok) {
+          // 成功したら AppSheet にリダイレクト
+          window.location.href = APPSHEET_BASE;
+        } else {
+          // 失敗したらエラー表示して止める
+          document.getElementById('msg').textContent =
+            'GAS の更新に失敗しました：' + (data.message || '不明なエラー');
+        }
+      })
+      .catch(function(err) {
+        console.error(err);
+        document.getElementById('msg').textContent =
+          'GAS 呼び出しでエラーが発生しました：' + err;
+      });
+  })();
+</script>
